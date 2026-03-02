@@ -1,11 +1,22 @@
 import type { ScoredItem } from "@/lib/pipeline/score";
+import { translateToChinese } from "@/lib/analyst/translate";
 
-export function summarizeTopItems(items: ScoredItem[]) {
-  const top = [...items].sort((a, b) => b.score - a.score).slice(0, 5);
+export async function summarizeTopItems(items: ScoredItem[]) {
+  const topRaw = [...items].sort((a, b) => b.score - a.score).slice(0, 5);
+
+  const top = await Promise.all(
+    topRaw.map(async (item) => {
+      const titleZh = await translateToChinese(item.title);
+      return {
+        ...item,
+        titleZh,
+      };
+    }),
+  );
 
   const lines = top.map(
     (item, idx) =>
-      `${idx + 1}) ${item.title}\n- 来源：${item.sourceName}\n- 评分：${item.score}\n- 链接：${item.url}`,
+      `${idx + 1}) ${item.titleZh}\n- 原文标题：${item.title}\n- 来源：${item.sourceName}\n- 评分：${item.score}\n- 原始链接：${item.url}`,
   );
 
   const trend =

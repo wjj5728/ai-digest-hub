@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Topic = { tag: string; count: number };
-type Item = { title: string; sourceName: string; score: number; url: string };
+type Item = { title: string; titleZh?: string; sourceName: string; score: number; url: string };
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
 
 export default function HomePage() {
@@ -107,9 +107,12 @@ export default function HomePage() {
           <ul>
             {top.length === 0 && <li>暂无数据</li>}
             {top.map((x, i) => (
-              <li key={i} style={{ marginBottom: 8 }}>
-                <strong>{x.title}</strong>
+              <li key={i} style={{ marginBottom: 10 }}>
+                <strong>{x.titleZh || x.title}</strong>
                 <div style={{ color: "#98a2b3" }}>{x.sourceName} | 评分 {x.score}</div>
+                <a href={x.url} target="_blank" rel="noreferrer" style={{ color: "#84caff", fontSize: 13 }}>
+                  原文链接
+                </a>
               </li>
             ))}
           </ul>

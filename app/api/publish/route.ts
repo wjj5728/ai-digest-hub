@@ -11,7 +11,7 @@ export async function POST() {
   const collected = await collectRss();
   const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
-  const digest = summarizeTopItems(scored);
+  const digest = await summarizeTopItems(scored);
   const markdown = toMarkdown(digest.title, digest.body);
   const result = await publishTelegram(markdown);
 

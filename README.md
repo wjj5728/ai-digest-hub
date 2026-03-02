@@ -2,6 +2,12 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v0.3.0
+- 新增分析打分层（`lib/pipeline/score.ts`）
+- `/api/analyze` 输出 Top5 + 趋势一句话
+- `/api/digest` 与 `/api/cron/daily` 接入真实分析链路
+- 日报内容由采集结果实时生成，不再是固定占位文案
+
 ## v0.2.0
 - 接入真实 RSS 抓取（`fast-xml-parser`）
 - `/api/collect` 增加去重统计（rawCount/uniqueCount）

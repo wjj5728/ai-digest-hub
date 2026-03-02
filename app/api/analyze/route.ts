@@ -1,7 +1,21 @@
 import { NextResponse } from "next/server";
-import { summarizeItems } from "@/lib/analyst/summarize";
+
+import { summarizeTopItems } from "@/lib/analyst/summarize";
+import { collectRss } from "@/lib/collector/rss";
+import { dedupeItems } from "@/lib/pipeline/dedupe";
+import { scoreItems } from "@/lib/pipeline/score";
 
 export async function POST() {
-  const digest = await summarizeItems();
-  return NextResponse.json({ ok: true, stage: "analyze", digest });
+  const collected = await collectRss();
+  const uniqueItems = dedupeItems(collected.items);
+  const scored = scoreItems(uniqueItems);
+  const digest = summarizeTopItems(scored);
+
+  return NextResponse.json({
+    ok: true,
+    stage: "analyze",
+    rawCount: collected.itemCount,
+    uniqueCount: uniqueItems.length,
+    digest,
+  });
 }

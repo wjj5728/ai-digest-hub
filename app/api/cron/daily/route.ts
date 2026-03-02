@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { summarizeTopItems } from "@/lib/analyst/summarize";
 import { collectRss } from "@/lib/collector/rss";
-import { summarizeItems } from "@/lib/analyst/summarize";
+import { dedupeItems } from "@/lib/pipeline/dedupe";
+import { scoreItems } from "@/lib/pipeline/score";
 import { toMarkdown } from "@/lib/publisher/markdown";
 import { publishTelegram } from "@/lib/publisher/telegram";
 
@@ -11,9 +13,22 @@ export async function POST(request: Request) {
   }
 
   const collected = await collectRss();
-  const digest = await summarizeItems();
+  const uniqueItems = dedupeItems(collected.items);
+  const scored = scoreItems(uniqueItems);
+  const digest = summarizeTopItems(scored);
   const markdown = toMarkdown(digest.title, digest.body);
   const published = await publishTelegram(markdown);
 
-  return NextResponse.json({ ok: true, stage: "daily", collected, digest, published });
+  return NextResponse.json({
+    ok: true,
+    stage: "daily",
+    collected: {
+      rawCount: collected.itemCount,
+      uniqueCount: uniqueItems.length,
+      sourceCount: collected.sourceCount,
+      errors: collected.errors,
+    },
+    digest,
+    published,
+  });
 }

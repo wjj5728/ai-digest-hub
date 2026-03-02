@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v0.4.0
+- Telegram 分发改为真实发送（配置 token/chat_id 后可直发）
+- 未配置时自动 mock，不中断主流程
+- `/api/publish` 与 `/api/cron/daily` 返回发送状态明细
+
 ## v0.3.0
 - 新增分析打分层（`lib/pipeline/score.ts`）
 - `/api/analyze` 输出 Top5 + 趋势一句话

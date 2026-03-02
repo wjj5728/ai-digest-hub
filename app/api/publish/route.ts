@@ -1,7 +1,24 @@
 import { NextResponse } from "next/server";
+
+import { summarizeTopItems } from "@/lib/analyst/summarize";
+import { collectRss } from "@/lib/collector/rss";
+import { dedupeItems } from "@/lib/pipeline/dedupe";
+import { scoreItems } from "@/lib/pipeline/score";
+import { toMarkdown } from "@/lib/publisher/markdown";
 import { publishTelegram } from "@/lib/publisher/telegram";
 
 export async function POST() {
-  const result = await publishTelegram("[MVP] AI 日报分发测试消息");
-  return NextResponse.json({ ok: true, stage: "publish", result });
+  const collected = await collectRss();
+  const uniqueItems = dedupeItems(collected.items);
+  const scored = scoreItems(uniqueItems);
+  const digest = summarizeTopItems(scored);
+  const markdown = toMarkdown(digest.title, digest.body);
+  const result = await publishTelegram(markdown);
+
+  return NextResponse.json({
+    ok: true,
+    stage: "publish",
+    digestTitle: digest.title,
+    result,
+  });
 }

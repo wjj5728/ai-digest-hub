@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { collectRss } from "@/lib/collector/rss";
+import { collectAllSources } from "@/lib/collector";
 import { dedupeItems } from "@/lib/pipeline/dedupe";
 
 export async function POST() {
-  const collected = await collectRss();
+  const collected = await collectAllSources();
   const uniqueItems = dedupeItems(collected.items);
 
   return NextResponse.json({
@@ -15,6 +15,7 @@ export async function POST() {
     rawCount: collected.itemCount,
     uniqueCount: uniqueItems.length,
     errors: collected.errors,
+    breakdown: collected.breakdown,
     items: uniqueItems.slice(0, 50),
   });
 }

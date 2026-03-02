@@ -2,6 +2,12 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v1.0.0
+- 新增多源采集聚合：RSS + 网页抓取 + 公共API
+- 新增 `collector/web.ts`（OpenAI Index、Mistral News）
+- 新增 `collector/api.ts`（Hacker News Top、GitHub Releases）
+- 所有分析/生成/分发链路统一走 `collectAllSources`
+
 ## v0.9.1
 - 强化标题中文化兜底：模型失败或输出偏英文时，走本地术语映射翻译
 - 修复“标题未翻译中文”问题，保证前端展示中文摘要

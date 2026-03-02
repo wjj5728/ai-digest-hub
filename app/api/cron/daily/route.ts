@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { summarizeTopItems } from "@/lib/analyst/summarize";
-import { collectRss } from "@/lib/collector/rss";
-import { appendDigest } from "@/lib/db/file-store";
+import { collectAllSources } from "@/lib/collector";import { appendDigest } from "@/lib/db/file-store";
 import { dedupeItems } from "@/lib/pipeline/dedupe";
 import { scoreItems } from "@/lib/pipeline/score";
 import { buildTopicStats } from "@/lib/pipeline/topics";
@@ -14,8 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const collected = await collectRss();
-  const uniqueItems = dedupeItems(collected.items);
+  const collected = await collectAllSources();  const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
   const digest = await summarizeTopItems(scored);
   const topics = buildTopicStats(scored);

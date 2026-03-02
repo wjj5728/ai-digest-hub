@@ -48,3 +48,8 @@ export async function listDigests(limit = 10) {
   const rows = await loadAll();
   return rows.slice(0, limit);
 }
+
+export async function getDigestById(id: string) {
+  const rows = await loadAll();
+  return rows.find((x) => x.id === id) || null;
+}

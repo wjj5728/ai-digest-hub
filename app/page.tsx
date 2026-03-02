@@ -38,10 +38,16 @@ export default function HomePage() {
   const [trend, setTrend] = useState("");
   const [publishStatus, setPublishStatus] = useState("-");
   const [digests, setDigests] = useState<DigestRow[]>([]);
+  const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
 
   async function loadDigestHistory() {
     const data = await requestJson("/api/digest/list?limit=10");
     setDigests(data.rows || []);
+  }
+
+  async function openDigestDetail(id: string) {
+    const data = await requestJson(`/api/digest/${id}`);
+    setSelectedDigest(data.row || null);
   }
 
   async function runCollect() {
@@ -109,7 +115,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v0.8.1 前端容错增强：避免 JSON 解析异常导致页面报错</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v0.9.0 日报详情预览：支持查看历史正文</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
@@ -158,18 +164,33 @@ export default function HomePage() {
         </section>
       </div>
 
-      <section style={{ marginTop: 14, border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
-        <h2 style={{ marginTop: 0 }}>历史日报</h2>
-        <ul>
-          {digests.length === 0 && <li>暂无历史</li>}
-          {digests.map((d) => (
-            <li key={d.id} style={{ marginBottom: 10 }}>
-              <strong>{d.title}</strong>
-              <div style={{ color: "#98a2b3" }}>{new Date(d.createdAt).toLocaleString("zh-CN")}</div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+          <h2 style={{ marginTop: 0 }}>历史日报</h2>
+          <ul>
+            {digests.length === 0 && <li>暂无历史</li>}
+            {digests.map((d) => (
+              <li key={d.id} style={{ marginBottom: 10 }}>
+                <button
+                  style={{ background: "transparent", border: 0, color: "#e8eefc", cursor: "pointer", padding: 0, textAlign: "left" }}
+                  onClick={() => openDigestDetail(d.id)}
+                >
+                  <strong>{d.title}</strong>
+                </button>
+                <div style={{ color: "#98a2b3" }}>{new Date(d.createdAt).toLocaleString("zh-CN")}</div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+          <h2 style={{ marginTop: 0 }}>日报正文</h2>
+          {!selectedDigest && <p style={{ color: "#98a2b3" }}>点击左侧历史日报标题查看正文。</p>}
+          {selectedDigest && (
+            <pre style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 13 }}>{selectedDigest.body}</pre>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

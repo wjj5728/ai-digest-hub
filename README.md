@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v0.8.2
+- 修复 `/api/digest` 在 Vercel 环境写入失败导致的 500
+- 文件存储在 Vercel 自动切换到 `/tmp/ai-digest-hub`
+- 本地环境继续使用 `data/daily-digests.json`
+
 ## v0.8.1
 - 前端 API 请求增加 JSON 容错解析
 - 后端异常返回 HTML/空响应时，前端改为可读错误提示

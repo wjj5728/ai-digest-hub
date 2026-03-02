@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const DATA_DIR = join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL ? "/tmp/ai-digest-hub" : join(process.cwd(), "data");
 const DIGEST_FILE = join(DATA_DIR, "daily-digests.json");
 
 type DigestRecord = {

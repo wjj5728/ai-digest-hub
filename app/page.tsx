@@ -6,6 +6,26 @@ type Topic = { tag: string; count: number };
 type Item = { title: string; titleZh?: string; sourceName: string; score: number; url: string };
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
 
+async function requestJson(url: string, init?: RequestInit) {
+  const res = await fetch(url, init);
+  const text = await res.text();
+
+  let data: any = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text.slice(0, 200) };
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `${url} failed: HTTP ${res.status}`);
+  }
+
+  return data;
+}
+
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState("idle");
@@ -20,25 +40,20 @@ export default function HomePage() {
   const [digests, setDigests] = useState<DigestRow[]>([]);
 
   async function loadDigestHistory() {
-    const res = await fetch("/api/digest/list?limit=10");
-    const data = await res.json();
+    const data = await requestJson("/api/digest/list?limit=10");
     setDigests(data.rows || []);
   }
 
   async function runCollect() {
     setStage("collect");
-    const res = await fetch("/api/collect", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "collect failed");
+    const data = await requestJson("/api/collect", { method: "POST" });
     setRawCount(data.rawCount || 0);
     setUniqueCount(data.uniqueCount || 0);
   }
 
   async function runAnalyze() {
     setStage("analyze");
-    const res = await fetch("/api/analyze", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "analyze failed");
+    const data = await requestJson("/api/analyze", { method: "POST" });
 
     setRawCount(data.rawCount || 0);
     setUniqueCount(data.uniqueCount || 0);
@@ -49,9 +64,7 @@ export default function HomePage() {
 
   async function runDigest() {
     setStage("digest");
-    const res = await fetch("/api/digest", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "digest failed");
+    const data = await requestJson("/api/digest", { method: "POST" });
 
     setTopics(data.topics || []);
     setTop(data.digest?.top || []);
@@ -61,9 +74,7 @@ export default function HomePage() {
 
   async function runPublish() {
     setStage("publish");
-    const res = await fetch("/api/publish", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "publish failed");
+    const data = await requestJson("/api/publish", { method: "POST" });
     setPublishStatus(data.result?.status || "-");
   }
 
@@ -98,7 +109,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v0.7.0 前端控制台：采集、分析、生成、分发一站式操作</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v0.8.1 前端容错增强：避免 JSON 解析异常导致页面报错</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>

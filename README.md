@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v0.6.0
+- 分析层新增主题统计（model/product/policy/infra）
+- `/api/analyze` 与 `/api/digest` 返回 `topics` 字段
+- 首页增加“最近日报记录”预览
+
 ## v0.5.0
 - 新增文件存储层（`data/daily-digests.json`）用于保存日报历史
 - `/api/digest` 与 `/api/cron/daily` 生成后自动落盘

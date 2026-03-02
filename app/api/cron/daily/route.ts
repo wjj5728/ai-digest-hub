@@ -4,6 +4,7 @@ import { collectRss } from "@/lib/collector/rss";
 import { appendDigest } from "@/lib/db/file-store";
 import { dedupeItems } from "@/lib/pipeline/dedupe";
 import { scoreItems } from "@/lib/pipeline/score";
+import { buildTopicStats } from "@/lib/pipeline/topics";
 import { toMarkdown } from "@/lib/publisher/markdown";
 import { publishTelegram } from "@/lib/publisher/telegram";
 
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
   const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
   const digest = summarizeTopItems(scored);
+  const topics = buildTopicStats(scored);
   const markdown = toMarkdown(digest.title, digest.body);
   const saved = await appendDigest(digest.title, markdown);
   const published = await publishTelegram(markdown);
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
       errors: collected.errors,
     },
     digest,
+    topics,
     saved,
     published,
   });

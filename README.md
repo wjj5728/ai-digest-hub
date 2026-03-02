@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v0.5.0
+- 新增文件存储层（`data/daily-digests.json`）用于保存日报历史
+- `/api/digest` 与 `/api/cron/daily` 生成后自动落盘
+- 新增 `/api/digest/list` 查询最近日报
+
 ## v0.4.0
 - Telegram 分发改为真实发送（配置 token/chat_id 后可直发）
 - 未配置时自动 mock，不中断主流程

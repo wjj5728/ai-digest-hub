@@ -13,6 +13,7 @@ type Item = {
   confidence?: number;
 };
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
+type MetricRow = { date: string; total: number; aCount: number; bCount: number; cCount: number; dCount: number };
 
 async function requestJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -68,6 +69,7 @@ export default function HomePage() {
   const [digests, setDigests] = useState<DigestRow[]>([]);
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
+  const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -78,6 +80,11 @@ export default function HomePage() {
   async function openDigestDetail(id: string) {
     const data = await requestJson(`/api/digest/${id}`);
     setSelectedDigest(data.row || null);
+  }
+
+  async function loadMetrics() {
+    const data = await requestJson("/api/metrics?limit=7");
+    setMetrics(data.rows || []);
   }
 
   async function checkConfig() {
@@ -114,6 +121,7 @@ export default function HomePage() {
     setTop(data.digest?.top || []);
     setTrend(data.digest?.trend || "");
     await loadDigestHistory();
+    await loadMetrics();
   }
 
   async function runPublish() {
@@ -167,6 +175,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadDigestHistory().catch(() => undefined);
+    loadMetrics().catch(() => undefined);
   }, []);
 
   const aTierCount = useMemo(() => top.filter((x) => x.tier === "A").length, [top]);
@@ -175,7 +184,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1240, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.6 快捷复用：复制正文 + 导出 Markdown + 一键打开最新日报</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.7 近7天趋势图（日报量与信源等级分布）</p>
 
       <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
@@ -193,6 +202,24 @@ export default function HomePage() {
         <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
           <div style={{ color: "#98a2b3", fontSize: 12 }}>分发状态</div>
           <div style={{ marginTop: 6 }}><span style={badgeStyle(publishStatus)}>{publishStatus}</span></div>
+        </div>
+      </section>
+
+      <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d", marginBottom: 12 }}>
+        <h2 style={{ marginTop: 0 }}>近7天趋势</h2>
+        <div style={{ display: "grid", gap: 8 }}>
+          {metrics.length === 0 && <div style={{ color: "#98a2b3" }}>暂无趋势数据，先生成日报后显示。</div>}
+          {metrics.map((m) => (
+            <div key={m.date} style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10, alignItems: "center" }}>
+              <div style={{ color: "#98a2b3", fontSize: 12 }}>{m.date}</div>
+              <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: "#1d2538" }}>
+                <div style={{ width: `${Math.min(100, m.aCount * 10)}%`, background: "#32d583" }} title={`A: ${m.aCount}`} />
+                <div style={{ width: `${Math.min(100, m.bCount * 10)}%`, background: "#6ce9a6" }} title={`B: ${m.bCount}`} />
+                <div style={{ width: `${Math.min(100, m.cCount * 10)}%`, background: "#fdb022" }} title={`C: ${m.cCount}`} />
+                <div style={{ width: `${Math.min(100, m.dCount * 10)}%`, background: "#f97066" }} title={`D: ${m.dCount}`} />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

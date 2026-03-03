@@ -14,6 +14,7 @@ type Item = {
 };
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
 type MetricRow = { date: string; total: number; aCount: number; bCount: number; cCount: number; dCount: number };
+type SourceRow = { id: string; name: string; type: "rss" | "web" | "api"; enabled: boolean; weight?: number };
 
 async function requestJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -91,6 +92,7 @@ export default function HomePage() {
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
+  const [sources, setSources] = useState<SourceRow[]>([]);
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -106,6 +108,20 @@ export default function HomePage() {
   async function openDigestDetail(id: string) {
     const data = await requestJson(`/api/digest/${id}`);
     setSelectedDigest(data.row || null);
+  }
+
+  async function loadSources() {
+    const data = await requestJson("/api/sources");
+    setSources(data.rows || []);
+  }
+
+  async function toggleSource(id: string, enabled: boolean) {
+    await requestJson("/api/sources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, enabled }),
+    });
+    await loadSources();
   }
 
   async function checkConfig() {
@@ -190,6 +206,7 @@ export default function HomePage() {
   useEffect(() => {
     loadDigestHistory().catch(() => undefined);
     loadMetrics().catch(() => undefined);
+    loadSources().catch(() => undefined);
     const q = window.matchMedia("(max-width: 920px)");
     const update = () => setIsMobile(q.matches);
     update();
@@ -212,7 +229,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.0.9 视觉升级：信息中台风格 + 更强层级与可读性</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.0 渠道管理：可视化开关各资讯来源</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -276,6 +293,20 @@ export default function HomePage() {
             <button style={actionButton} onClick={runAnalyze} disabled={loading}>仅分析</button>
             <button style={actionButton} onClick={runDigest} disabled={loading}>仅生成日报</button>
             <button style={actionButton} onClick={runPublish} disabled={loading}>仅分发</button>
+          </div>
+
+          <h3 style={{ marginTop: 14, marginBottom: 8 }}>渠道管理</h3>
+          <div style={{ display: "grid", gap: 6, maxHeight: 220, overflow: "auto", border: "1px solid #2a3555", borderRadius: 10, padding: 8 }}>
+            {sources.map((s) => (
+              <label key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12 }}>
+                <span>{s.name} <span style={{ color: "#8fa2c7" }}>({s.type})</span></span>
+                <input
+                  type="checkbox"
+                  checked={s.enabled}
+                  onChange={(e) => toggleSource(s.id, e.target.checked)}
+                />
+              </label>
+            ))}
           </div>
         </section>
       </div>

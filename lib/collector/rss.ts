@@ -1,7 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 
-import { extraRssSources } from "@/lib/config/extra-sources";
-import { sources } from "@/lib/config/sources";
+import { getResolvedSources } from "@/lib/config/sources-runtime";
 
 export type CollectedItem = {
   sourceId: string;
@@ -33,13 +32,15 @@ function normalizeItem(item: any) {
 
 export async function collectRss() {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
-  const enabled = [...sources, ...extraRssSources].filter((s) => s.enabled);
+  const resolved = await getResolvedSources();
+  const enabled = resolved.filter((s) => s.type === "rss" && s.enabled && s.url);
   const allItems: CollectedItem[] = [];
   const errors: Array<{ sourceId: string; message: string }> = [];
 
   for (const source of enabled) {
     try {
-      const response = await fetch(source.url, { cache: "no-store" });
+      const sourceUrl = source.url as string;
+      const response = await fetch(sourceUrl, { cache: "no-store" });
       if (!response.ok) {
         errors.push({ sourceId: source.id, message: `HTTP ${response.status}` });
         continue;

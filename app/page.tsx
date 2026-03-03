@@ -9,6 +9,7 @@ type Item = {
   sourceName: string;
   score: number;
   url: string;
+  dateLabel?: string;
   tier?: "A" | "B" | "C" | "D";
   confidence?: number;
 };
@@ -93,6 +94,8 @@ export default function HomePage() {
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [topN, setTopN] = useState(20);
+  const [minConfidence, setMinConfidence] = useState(0);
+  const [tierFilter, setTierFilter] = useState("ALL");
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -227,6 +230,14 @@ export default function HomePage() {
     return () => q.removeEventListener("change", update);
   }, []);
 
+  const visibleTop = useMemo(() => {
+    return top.filter((x) => {
+      const passTier = tierFilter === "ALL" || x.tier === tierFilter;
+      const passConfidence = (x.confidence || 0) >= minConfidence;
+      return passTier && passConfidence;
+    });
+  }, [top, tierFilter, minConfidence]);
+
   const aTierCount = useMemo(() => top.filter((x) => x.tier === "A").length, [top]);
   const aTierRate = top.length ? `${Math.round((aTierCount / top.length) * 100)}%` : "-";
 
@@ -242,7 +253,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.1 Top条数升级：默认20，可自由切换</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.2 Top列表筛选：按信源等级与置信度快速过滤</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -271,15 +282,31 @@ export default function HomePage() {
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 14 }}>
         <section style={{ ...panel, padding: 14 }}>
-          <h2 style={{ marginTop: 0 }}>今日 Top5</h2>
+          <h2 style={{ marginTop: 0 }}>今日 Top{topN}</h2>
           <p style={{ color: "#8fa2c7" }}>趋势：{trend || "点击全流程生成后显示"}</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <span style={{ color: "#8fa2c7", fontSize: 12 }}>筛选：</span>
+            <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "2px 8px" }}>
+              <option value="ALL">全部等级</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+            <select value={minConfidence} onChange={(e) => setMinConfidence(Number(e.target.value))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "2px 8px" }}>
+              <option value={0}>置信度不限</option>
+              <option value={60}>{">= 60"}</option>
+              <option value={70}>{">= 70"}</option>
+              <option value={80}>{">= 80"}</option>
+            </select>
+          </div>
           <div style={{ display: "grid", gap: 10 }}>
-            {top.length === 0 && <div style={{ color: "#8fa2c7" }}>暂无数据</div>}
-            {top.map((x, i) => (
+            {visibleTop.length === 0 && <div style={{ color: "#8fa2c7" }}>暂无匹配数据</div>}
+            {visibleTop.map((x, i) => (
               <article key={i} style={{ border: "1px solid #2a3555", borderRadius: 12, padding: 12, background: "#0f172b" }}>
                 <div style={{ fontWeight: 800, lineHeight: 1.5 }}>{x.titleZh || x.title}</div>
                 <div style={{ color: "#8fa2c7", marginTop: 4, fontSize: 13 }}>
-                  {x.sourceName} | 评分 {x.score} | 信源 <span style={{ color: tierColor(x.tier), fontWeight: 700 }}>{x.tier || "-"}</span> | 置信度 {x.confidence ?? "-"}
+                  {x.sourceName} | 日期 {x.dateLabel || "未知"} | 评分 {x.score} | 信源 <span style={{ color: tierColor(x.tier), fontWeight: 700 }}>{x.tier || "-"}</span> | 置信度 {x.confidence ?? "-"}
                 </div>
                 <a href={x.url} target="_blank" rel="noreferrer" style={{ color: "#7dd3fc", fontSize: 13 }}>原始链接</a>
               </article>

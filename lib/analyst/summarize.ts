@@ -13,13 +13,14 @@ export async function summarizeTopItems(items: ScoredItem[], topN = 20) {
       return {
         ...item,
         titleZh,
+        dateLabel: item.publishedAt ? item.publishedAt.slice(0, 10) : "",
       };
     }),
   );
 
   const lines = top.map(
     (item, idx) =>
-      `${idx + 1}) ${item.titleZh}\n- 原文标题：${item.title}\n- 来源：${item.sourceName}\n- 信源等级：${item.tier}（置信度 ${item.confidence}）\n- 评分：${item.score}\n- 原始链接：${item.url}`,
+      `${idx + 1}) ${item.titleZh}\n- 原文标题：${item.title}\n- 来源：${item.sourceName}\n- 日期：${item.dateLabel || "未知"}\n- 信源等级：${item.tier}（置信度 ${item.confidence}）\n- 评分：${item.score}\n- 原始链接：${item.url}`,
   );
 
   const trend =

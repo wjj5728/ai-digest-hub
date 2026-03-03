@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Topic = { tag: string; count: number };
-type Item = { title: string; titleZh?: string; sourceName: string; score: number; url: string };
+type Item = {
+  title: string;
+  titleZh?: string;
+  sourceName: string;
+  score: number;
+  url: string;
+  tier?: "A" | "B" | "C" | "D";
+  confidence?: number;
+};
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
 
 async function requestJson(url: string, init?: RequestInit) {
@@ -126,7 +134,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.3 今日优先策略 + 扩展资讯源</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.4 信源分级与置信度可视化</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
@@ -137,7 +145,9 @@ export default function HomePage() {
             {top.map((x, i) => (
               <li key={i} style={{ marginBottom: 10 }}>
                 <strong>{x.titleZh || x.title}</strong>
-                <div style={{ color: "#98a2b3" }}>{x.sourceName} | 评分 {x.score}</div>
+                <div style={{ color: "#98a2b3" }}>
+                  {x.sourceName} | 评分 {x.score} | 信源 {x.tier || "-"} | 置信度 {x.confidence ?? "-"}
+                </div>
                 <a href={x.url} target="_blank" rel="noreferrer" style={{ color: "#84caff", fontSize: 13 }}>
                   原文链接
                 </a>

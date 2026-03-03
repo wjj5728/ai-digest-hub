@@ -1,8 +1,11 @@
 import type { CollectedItem } from "@/lib/collector/rss";
+import { rankSource } from "@/lib/pipeline/source-rank";
 
 export type ScoredItem = CollectedItem & {
   score: number;
   tags: string[];
+  tier: "A" | "B" | "C" | "D";
+  confidence: number;
 };
 
 const KEYWORDS: Array<{ tag: string; words: string[]; weight: number }> = [
@@ -34,6 +37,9 @@ export function scoreItems(items: CollectedItem[]) {
       else if (ageHours <= 72) score += 1;
     }
 
-    return { ...item, score, tags } as ScoredItem;
+    const rank = rankSource(item.sourceId);
+    score += Math.floor((rank.confidence - 50) / 10);
+
+    return { ...item, score, tags, tier: rank.tier, confidence: rank.confidence } as ScoredItem;
   });
 }

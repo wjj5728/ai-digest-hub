@@ -68,6 +68,7 @@ export default function HomePage() {
   const [digests, setDigests] = useState<DigestRow[]>([]);
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
+  const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
     const data = await requestJson("/api/digest/list?limit=10");
@@ -121,6 +122,32 @@ export default function HomePage() {
     setPublishStatus(data.result?.status || "-");
   }
 
+  async function runDigestAndOpenLatest() {
+    await runDigest();
+    const latest = await requestJson("/api/digest/list?limit=1");
+    if (latest.rows?.[0]?.id) {
+      await openDigestDetail(latest.rows[0].id);
+    }
+  }
+
+  async function copyDigestBody() {
+    if (!selectedDigest?.body) return;
+    await navigator.clipboard.writeText(selectedDigest.body);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
+
+  function exportDigestMarkdown() {
+    if (!selectedDigest?.body) return;
+    const blob = new Blob([selectedDigest.body], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ai-digest-${selectedDigest.id}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function runAll() {
     setLoading(true);
     setError("");
@@ -148,7 +175,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1240, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.5 产品化面板：KPI + 卡片流 + 历史记录表</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.6 快捷复用：复制正文 + 导出 Markdown + 一键打开最新日报</p>
 
       <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
@@ -205,6 +232,7 @@ export default function HomePage() {
           {error && <p style={{ color: "#f97066" }}>错误：{error}</p>}
           <div style={{ display: "grid", gap: 8 }}>
             <button onClick={runAll} disabled={loading}>{loading ? "执行中..." : "全流程生成"}</button>
+            <button onClick={runDigestAndOpenLatest} disabled={loading}>生成并打开最新日报</button>
             <button onClick={checkConfig} disabled={loading}>检测模型配置</button>
             <button onClick={runCollect} disabled={loading}>仅采集</button>
             <button onClick={runAnalyze} disabled={loading}>仅分析</button>
@@ -248,7 +276,16 @@ export default function HomePage() {
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
           <h2 style={{ marginTop: 0 }}>日报正文</h2>
           {!selectedDigest && <p style={{ color: "#98a2b3" }}>点击左侧历史日报查看正文。</p>}
-          {selectedDigest && <pre style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 13 }}>{selectedDigest.body}</pre>}
+          {selectedDigest && (
+            <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <button onClick={copyDigestBody}>复制正文</button>
+                <button onClick={exportDigestMarkdown}>导出 Markdown</button>
+                {copied && <span style={{ color: "#32d583", fontSize: 12, alignSelf: "center" }}>已复制</span>}
+              </div>
+              <pre style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 13 }}>{selectedDigest.body}</pre>
+            </>
+          )}
         </section>
       </div>
     </main>

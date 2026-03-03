@@ -92,6 +92,7 @@ export default function HomePage() {
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
+  const [topN, setTopN] = useState(20);
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [copied, setCopied] = useState(false);
 
@@ -138,7 +139,11 @@ export default function HomePage() {
 
   async function runAnalyze() {
     setStage("analyze");
-    const data = await requestJson("/api/analyze", { method: "POST" });
+    const data = await requestJson("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topN }),
+    });
     setRawCount(data.rawCount || 0);
     setUniqueCount(data.uniqueCount || 0);
     setTopics(data.topics || []);
@@ -148,7 +153,11 @@ export default function HomePage() {
 
   async function runDigest() {
     setStage("digest");
-    const data = await requestJson("/api/digest", { method: "POST" });
+    const data = await requestJson("/api/digest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topN }),
+    });
     setTopics(data.topics || []);
     setTop(data.digest?.top || []);
     setTrend(data.digest?.trend || "");
@@ -158,7 +167,11 @@ export default function HomePage() {
 
   async function runPublish() {
     setStage("publish");
-    const data = await requestJson("/api/publish", { method: "POST" });
+    const data = await requestJson("/api/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topN }),
+    });
     setPublishStatus(data.result?.status || "-");
   }
 
@@ -229,7 +242,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.0 渠道管理：可视化开关各资讯来源</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.1 Top条数升级：默认20，可自由切换</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -282,6 +295,19 @@ export default function HomePage() {
         <section style={{ ...panel, padding: 14 }}>
           <h2 style={{ marginTop: 0 }}>控制台</h2>
           <p>阶段：{stage}</p>
+          <p>
+            Top条数：
+            <select
+              value={topN}
+              onChange={(e) => setTopN(Number(e.target.value))}
+              style={{ marginLeft: 8, borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "3px 8px" }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+            </select>
+          </p>
           <p>模式：{configStatus.mode || "未检测"}</p>
           <p>模型：{configStatus.model || "-"}</p>
           {error && <p style={{ color: "#f97373" }}>错误：{error}</p>}

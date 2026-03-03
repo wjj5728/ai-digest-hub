@@ -17,7 +17,8 @@ export async function POST(request: Request) {
 
   const collected = await collectAllSources();  const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
-  const digest = await summarizeTopItems(scored);
+  const topN = Number(process.env.DIGEST_TOP_N || 20);
+  const digest = await summarizeTopItems(scored, topN);
   const topics = buildTopicStats(scored);
   const markdown = toMarkdown(digest.title, digest.body);
   const saved = await appendDigest(digest.title, markdown);

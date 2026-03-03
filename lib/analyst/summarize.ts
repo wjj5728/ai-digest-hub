@@ -2,9 +2,10 @@ import { translateToChinese } from "@/lib/analyst/translate";
 import { keepTodayItems } from "@/lib/pipeline/date-filter";
 import type { ScoredItem } from "@/lib/pipeline/score";
 
-export async function summarizeTopItems(items: ScoredItem[]) {
+export async function summarizeTopItems(items: ScoredItem[], topN = 20) {
   const todayOnly = keepTodayItems(items);
-  const topRaw = [...todayOnly].sort((a, b) => b.score - a.score).slice(0, 5);
+  const safeTopN = Math.min(Math.max(Math.floor(topN || 20), 1), 50);
+  const topRaw = [...todayOnly].sort((a, b) => b.score - a.score).slice(0, safeTopN);
 
   const top = await Promise.all(
     topRaw.map(async (item) => {

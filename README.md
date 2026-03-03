@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v1.0.1
+- 新增模型配置自检接口：`/api/config-check`
+- 首页增加“一键检测模型配置”按钮
+- 前端可直接查看 key/baseUrl/model 生效状态
+
 ## v1.0.0
 - 新增多源采集聚合：RSS + 网页抓取 + 公共API
 - 新增 `collector/web.ts`（OpenAI Index、Mistral News）

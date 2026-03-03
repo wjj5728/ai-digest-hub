@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v1.0.3
+- 日报改为“今日优先”：仅收录 Asia/Shanghai 当日发布资讯
+- 今日不足 5 条时不补历史，确保时效性
+- 扩大 RSS 覆盖源（OpenAI Blog / DeepMind / Meta AI / Cohere / Microsoft Research AI）
+
 ## v1.0.2
 - 页面新增“运行模式”展示：`ai` 或 `mocked`
 - `/api/config-check` 返回 `mode` 字段，便于直观看当前链路

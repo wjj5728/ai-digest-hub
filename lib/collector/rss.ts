@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 
+import { extraRssSources } from "@/lib/config/extra-sources";
 import { sources } from "@/lib/config/sources";
 
 export type CollectedItem = {
@@ -32,7 +33,7 @@ function normalizeItem(item: any) {
 
 export async function collectRss() {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
-  const enabled = sources.filter((s) => s.enabled);
+  const enabled = [...sources, ...extraRssSources].filter((s) => s.enabled);
   const allItems: CollectedItem[] = [];
   const errors: Array<{ sourceId: string; message: string }> = [];
 

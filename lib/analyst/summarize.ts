@@ -1,8 +1,10 @@
-import type { ScoredItem } from "@/lib/pipeline/score";
 import { translateToChinese } from "@/lib/analyst/translate";
+import { keepTodayItems } from "@/lib/pipeline/date-filter";
+import type { ScoredItem } from "@/lib/pipeline/score";
 
 export async function summarizeTopItems(items: ScoredItem[]) {
-  const topRaw = [...items].sort((a, b) => b.score - a.score).slice(0, 5);
+  const todayOnly = keepTodayItems(items);
+  const topRaw = [...todayOnly].sort((a, b) => b.score - a.score).slice(0, 5);
 
   const top = await Promise.all(
     topRaw.map(async (item) => {
@@ -21,7 +23,7 @@ export async function summarizeTopItems(items: ScoredItem[]) {
 
   const trend =
     top.length === 0
-      ? "今日暂无有效资讯。"
+      ? "今日暂无符合时间条件的资讯（仅收录今日发布）。"
       : "头部动态集中在模型发布、产品迭代与安全治理三个方向。";
 
   return {

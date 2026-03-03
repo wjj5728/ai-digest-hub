@@ -9,6 +9,7 @@ export async function GET() {
     ok: true,
     provider: "rayincode",
     hasApiKey,
+    mode: hasApiKey ? "ai" : "mocked",
     baseUrl,
     model,
   });

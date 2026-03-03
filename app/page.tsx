@@ -39,7 +39,7 @@ export default function HomePage() {
   const [publishStatus, setPublishStatus] = useState("-");
   const [digests, setDigests] = useState<DigestRow[]>([]);
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
-  const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; baseUrl?: string; model?: string }>({});
+  const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
 
   async function loadDigestHistory() {
     const data = await requestJson("/api/digest/list?limit=10");
@@ -55,6 +55,7 @@ export default function HomePage() {
     const data = await requestJson("/api/config-check");
     setConfigStatus({
       hasApiKey: data.hasApiKey,
+      mode: data.mode,
       baseUrl: data.baseUrl,
       model: data.model,
     });
@@ -125,7 +126,7 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.1 模型配置自检：一键检测 key/baseUrl/model</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.2 运行模式展示：AI 或本地 mocked</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
@@ -163,6 +164,7 @@ export default function HomePage() {
             分发：<span style={{ color: statusColor }}>{publishStatus}</span>
           </p>
           <p>模型Key：{configStatus.hasApiKey === undefined ? "未检测" : configStatus.hasApiKey ? "已配置" : "未配置"}</p>
+          <p>运行模式：{configStatus.mode || "未检测"}</p>
           <p style={{ color: "#98a2b3", fontSize: 12 }}>Model: {configStatus.model || "-"}</p>
           {error && <p style={{ color: "#f97066" }}>错误：{error}</p>}
 

@@ -35,30 +35,51 @@ async function requestJson(url: string, init?: RequestInit) {
   return data;
 }
 
-function badgeStyle(value: string) {
+function badge(value: string) {
   const base = {
     borderRadius: 999,
-    padding: "3px 10px",
+    padding: "4px 10px",
     fontSize: 12,
-    border: "1px solid #2b3448",
+    border: "1px solid #2a3555",
     display: "inline-block",
+    fontWeight: 700,
   } as const;
-
-  if (value === "sent") return { ...base, color: "#32d583", borderColor: "#1d5f41" };
-  if (value === "mocked") return { ...base, color: "#fdb022", borderColor: "#7a5717" };
-  if (value === "failed") return { ...base, color: "#f97066", borderColor: "#7a2b28" };
-  return { ...base, color: "#98a2b3" };
+  if (value === "sent") return { ...base, color: "#22c55e", borderColor: "#1f7a43", background: "#0f2b1b" };
+  if (value === "mocked") return { ...base, color: "#f59e0b", borderColor: "#7a4e11", background: "#2b1f0f" };
+  if (value === "failed") return { ...base, color: "#f97373", borderColor: "#7f1d1d", background: "#2a1414" };
+  return { ...base, color: "#94a3b8", background: "#111a2d" };
 }
 
-function tierStyle(tier?: string) {
-  const map: Record<string, string> = { A: "#32d583", B: "#6ce9a6", C: "#fdb022", D: "#f97066" };
-  return { color: map[tier || ""] || "#98a2b3", fontWeight: 700 };
+function tierColor(t?: string) {
+  if (t === "A") return "#22c55e";
+  if (t === "B") return "#34d399";
+  if (t === "C") return "#f59e0b";
+  if (t === "D") return "#f97373";
+  return "#94a3b8";
 }
+
+const panel = {
+  border: "1px solid #24304a",
+  borderRadius: 14,
+  background: "linear-gradient(180deg, #121a2d 0%, #0f1627 100%)",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+} as const;
+
+const actionButton = {
+  borderRadius: 10,
+  border: "1px solid #2a3555",
+  background: "#16213a",
+  color: "#e6edff",
+  padding: "10px 12px",
+  cursor: "pointer",
+  fontWeight: 700,
+} as const;
 
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState("idle");
   const [error, setError] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
 
   const [rawCount, setRawCount] = useState(0);
   const [uniqueCount, setUniqueCount] = useState(0);
@@ -70,7 +91,6 @@ export default function HomePage() {
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -78,24 +98,19 @@ export default function HomePage() {
     setDigests(data.rows || []);
   }
 
-  async function openDigestDetail(id: string) {
-    const data = await requestJson(`/api/digest/${id}`);
-    setSelectedDigest(data.row || null);
-  }
-
   async function loadMetrics() {
     const data = await requestJson("/api/metrics?limit=7");
     setMetrics(data.rows || []);
   }
 
+  async function openDigestDetail(id: string) {
+    const data = await requestJson(`/api/digest/${id}`);
+    setSelectedDigest(data.row || null);
+  }
+
   async function checkConfig() {
     const data = await requestJson("/api/config-check");
-    setConfigStatus({
-      hasApiKey: data.hasApiKey,
-      mode: data.mode,
-      baseUrl: data.baseUrl,
-      model: data.model,
-    });
+    setConfigStatus({ hasApiKey: data.hasApiKey, mode: data.mode, baseUrl: data.baseUrl, model: data.model });
   }
 
   async function runCollect() {
@@ -134,9 +149,7 @@ export default function HomePage() {
   async function runDigestAndOpenLatest() {
     await runDigest();
     const latest = await requestJson("/api/digest/list?limit=1");
-    if (latest.rows?.[0]?.id) {
-      await openDigestDetail(latest.rows[0].id);
-    }
+    if (latest.rows?.[0]?.id) await openDigestDetail(latest.rows[0].id);
   }
 
   async function copyDigestBody() {
@@ -150,10 +163,10 @@ export default function HomePage() {
     if (!selectedDigest?.body) return;
     const blob = new Blob([selectedDigest.body], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `ai-digest-${selectedDigest.id}.md`;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ai-digest-${selectedDigest.id}.md`;
+    a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -177,53 +190,49 @@ export default function HomePage() {
   useEffect(() => {
     loadDigestHistory().catch(() => undefined);
     loadMetrics().catch(() => undefined);
-
-    const query = window.matchMedia("(max-width: 900px)");
-    const update = () => setIsMobile(query.matches);
+    const q = window.matchMedia("(max-width: 920px)");
+    const update = () => setIsMobile(q.matches);
     update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
+    q.addEventListener("change", update);
+    return () => q.removeEventListener("change", update);
   }, []);
 
   const aTierCount = useMemo(() => top.filter((x) => x.tier === "A").length, [top]);
   const aTierRate = top.length ? `${Math.round((aTierCount / top.length) * 100)}%` : "-";
 
   return (
-    <main style={{ maxWidth: 1240, margin: "0 auto", padding: 20 }}>
-      <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.8 移动端自适应优化（单列重排 + 触控友好）</p>
+    <main
+      style={{
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: 20,
+        color: "#e6edff",
+        background:
+          "radial-gradient(circle at 20% -10%, rgba(52,211,153,0.15), transparent 45%), radial-gradient(circle at 100% 0%, rgba(96,165,250,0.12), transparent 35%), #0a1120",
+      }}
+    >
+      <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.0.9 视觉升级：信息中台风格 + 更强层级与可读性</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
-        <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
-          <div style={{ color: "#98a2b3", fontSize: 12 }}>采集条数</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{rawCount}</div>
-        </div>
-        <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
-          <div style={{ color: "#98a2b3", fontSize: 12 }}>去重后</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{uniqueCount}</div>
-        </div>
-        <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
-          <div style={{ color: "#98a2b3", fontSize: 12 }}>A级占比</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{aTierRate}</div>
-        </div>
-        <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
-          <div style={{ color: "#98a2b3", fontSize: 12 }}>分发状态</div>
-          <div style={{ marginTop: 6 }}><span style={badgeStyle(publishStatus)}>{publishStatus}</span></div>
-        </div>
+        <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
+        <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>去重后</div><div style={{ fontSize: 24, fontWeight: 800 }}>{uniqueCount}</div></div>
+        <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>A级占比</div><div style={{ fontSize: 24, fontWeight: 800 }}>{aTierRate}</div></div>
+        <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>分发状态</div><div style={{ marginTop: 8 }}><span style={badge(publishStatus)}>{publishStatus}</span></div></div>
       </section>
 
-      <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d", marginBottom: 12 }}>
-        <h2 style={{ marginTop: 0 }}>近7天趋势</h2>
+      <section style={{ ...panel, padding: 14, marginBottom: 12 }}>
+        <h2 style={{ marginTop: 0, marginBottom: 8 }}>近7天趋势</h2>
         <div style={{ display: "grid", gap: 8 }}>
-          {metrics.length === 0 && <div style={{ color: "#98a2b3" }}>暂无趋势数据，先生成日报后显示。</div>}
+          {metrics.length === 0 && <div style={{ color: "#8fa2c7" }}>暂无趋势数据，先生成日报后显示。</div>}
           {metrics.map((m) => (
             <div key={m.date} style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10, alignItems: "center" }}>
-              <div style={{ color: "#98a2b3", fontSize: 12 }}>{m.date}</div>
-              <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: "#1d2538" }}>
-                <div style={{ width: `${Math.min(100, m.aCount * 10)}%`, background: "#32d583" }} title={`A: ${m.aCount}`} />
-                <div style={{ width: `${Math.min(100, m.bCount * 10)}%`, background: "#6ce9a6" }} title={`B: ${m.bCount}`} />
-                <div style={{ width: `${Math.min(100, m.cCount * 10)}%`, background: "#fdb022" }} title={`C: ${m.cCount}`} />
-                <div style={{ width: `${Math.min(100, m.dCount * 10)}%`, background: "#f97066" }} title={`D: ${m.dCount}`} />
+              <div style={{ color: "#8fa2c7", fontSize: 12 }}>{m.date}</div>
+              <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: "#1d2740" }}>
+                <div style={{ width: `${Math.min(100, m.aCount * 10)}%`, background: "#22c55e" }} />
+                <div style={{ width: `${Math.min(100, m.bCount * 10)}%`, background: "#34d399" }} />
+                <div style={{ width: `${Math.min(100, m.cCount * 10)}%`, background: "#f59e0b" }} />
+                <div style={{ width: `${Math.min(100, m.dCount * 10)}%`, background: "#f97373" }} />
               </div>
             </div>
           ))}
@@ -231,71 +240,61 @@ export default function HomePage() {
       </section>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 14 }}>
-        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+        <section style={{ ...panel, padding: 14 }}>
           <h2 style={{ marginTop: 0 }}>今日 Top5</h2>
-          <p style={{ color: "#98a2b3" }}>趋势：{trend || "点击全流程生成后显示"}</p>
+          <p style={{ color: "#8fa2c7" }}>趋势：{trend || "点击全流程生成后显示"}</p>
           <div style={{ display: "grid", gap: 10 }}>
-            {top.length === 0 && <div style={{ color: "#98a2b3" }}>暂无数据</div>}
+            {top.length === 0 && <div style={{ color: "#8fa2c7" }}>暂无数据</div>}
             {top.map((x, i) => (
-              <article key={i} style={{ border: "1px solid #2b3448", borderRadius: 10, padding: 10 }}>
-                <div style={{ fontWeight: 700 }}>{x.titleZh || x.title}</div>
-                <div style={{ color: "#98a2b3", marginTop: 4, fontSize: 13 }}>
-                  {x.sourceName} | 评分 {x.score} | 信源 <span style={tierStyle(x.tier)}>{x.tier || "-"}</span> | 置信度 {x.confidence ?? "-"}
+              <article key={i} style={{ border: "1px solid #2a3555", borderRadius: 12, padding: 12, background: "#0f172b" }}>
+                <div style={{ fontWeight: 800, lineHeight: 1.5 }}>{x.titleZh || x.title}</div>
+                <div style={{ color: "#8fa2c7", marginTop: 4, fontSize: 13 }}>
+                  {x.sourceName} | 评分 {x.score} | 信源 <span style={{ color: tierColor(x.tier), fontWeight: 700 }}>{x.tier || "-"}</span> | 置信度 {x.confidence ?? "-"}
                 </div>
-                <a href={x.url} target="_blank" rel="noreferrer" style={{ color: "#84caff", fontSize: 13 }}>原始链接</a>
+                <a href={x.url} target="_blank" rel="noreferrer" style={{ color: "#7dd3fc", fontSize: 13 }}>原始链接</a>
               </article>
             ))}
           </div>
-
           <h3>主题统计</h3>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {topics.length === 0 && <span style={{ color: "#98a2b3" }}>暂无</span>}
-            {topics.map((t) => (
-              <span key={t.tag} style={{ border: "1px solid #2b3448", borderRadius: 999, padding: "4px 10px" }}>
-                {t.tag}: {t.count}
-              </span>
-            ))}
+            {topics.length === 0 && <span style={{ color: "#8fa2c7" }}>暂无</span>}
+            {topics.map((t) => <span key={t.tag} style={{ border: "1px solid #2a3555", borderRadius: 999, padding: "4px 10px", background: "#111a30" }}>{t.tag}: {t.count}</span>)}
           </div>
         </section>
 
-        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+        <section style={{ ...panel, padding: 14 }}>
           <h2 style={{ marginTop: 0 }}>控制台</h2>
           <p>阶段：{stage}</p>
           <p>模式：{configStatus.mode || "未检测"}</p>
           <p>模型：{configStatus.model || "-"}</p>
-          {error && <p style={{ color: "#f97066" }}>错误：{error}</p>}
+          {error && <p style={{ color: "#f97373" }}>错误：{error}</p>}
           <div style={{ display: "grid", gap: 8 }}>
-            <button onClick={runAll} disabled={loading}>{loading ? "执行中..." : "全流程生成"}</button>
-            <button onClick={runDigestAndOpenLatest} disabled={loading}>生成并打开最新日报</button>
-            <button onClick={checkConfig} disabled={loading}>检测模型配置</button>
-            <button onClick={runCollect} disabled={loading}>仅采集</button>
-            <button onClick={runAnalyze} disabled={loading}>仅分析</button>
-            <button onClick={runDigest} disabled={loading}>仅生成日报</button>
-            <button onClick={runPublish} disabled={loading}>仅分发</button>
+            <button style={actionButton} onClick={runAll} disabled={loading}>{loading ? "执行中..." : "全流程生成"}</button>
+            <button style={actionButton} onClick={runDigestAndOpenLatest} disabled={loading}>生成并打开最新日报</button>
+            <button style={actionButton} onClick={checkConfig} disabled={loading}>检测模型配置</button>
+            <button style={actionButton} onClick={runCollect} disabled={loading}>仅采集</button>
+            <button style={actionButton} onClick={runAnalyze} disabled={loading}>仅分析</button>
+            <button style={actionButton} onClick={runDigest} disabled={loading}>仅生成日报</button>
+            <button style={actionButton} onClick={runPublish} disabled={loading}>仅分发</button>
           </div>
         </section>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginTop: 14 }}>
-        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+        <section style={{ ...panel, padding: 14 }}>
           <h2 style={{ marginTop: 0 }}>历史日报</h2>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ color: "#98a2b3", textAlign: "left" }}>
-                <th style={{ paddingBottom: 8 }}>时间</th>
-                <th style={{ paddingBottom: 8 }}>标题</th>
-              </tr>
+              <tr style={{ color: "#8fa2c7", textAlign: "left" }}><th style={{ paddingBottom: 8 }}>时间</th><th style={{ paddingBottom: 8 }}>标题</th></tr>
             </thead>
             <tbody>
-              {digests.length === 0 && (
-                <tr><td colSpan={2} style={{ color: "#98a2b3" }}>暂无历史</td></tr>
-              )}
+              {digests.length === 0 && <tr><td colSpan={2} style={{ color: "#8fa2c7" }}>暂无历史</td></tr>}
               {digests.map((d) => (
                 <tr key={d.id}>
-                  <td style={{ padding: "6px 0", color: "#98a2b3" }}>{new Date(d.createdAt).toLocaleString("zh-CN")}</td>
+                  <td style={{ padding: "6px 0", color: "#8fa2c7" }}>{new Date(d.createdAt).toLocaleString("zh-CN")}</td>
                   <td style={{ padding: "6px 0" }}>
                     <button
-                      style={{ background: "transparent", border: 0, color: "#e8eefc", cursor: "pointer", padding: 0, textAlign: "left" }}
+                      style={{ background: "transparent", border: 0, color: "#e6edff", cursor: "pointer", padding: 0, textAlign: "left", fontWeight: 700 }}
                       onClick={() => openDigestDetail(d.id)}
                     >
                       {d.title}
@@ -307,17 +306,17 @@ export default function HomePage() {
           </table>
         </section>
 
-        <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
+        <section style={{ ...panel, padding: 14 }}>
           <h2 style={{ marginTop: 0 }}>日报正文</h2>
-          {!selectedDigest && <p style={{ color: "#98a2b3" }}>点击左侧历史日报查看正文。</p>}
+          {!selectedDigest && <p style={{ color: "#8fa2c7" }}>点击左侧历史日报查看正文。</p>}
           {selectedDigest && (
             <>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <button onClick={copyDigestBody}>复制正文</button>
-                <button onClick={exportDigestMarkdown}>导出 Markdown</button>
-                {copied && <span style={{ color: "#32d583", fontSize: 12, alignSelf: "center" }}>已复制</span>}
+                <button style={actionButton} onClick={copyDigestBody}>复制正文</button>
+                <button style={actionButton} onClick={exportDigestMarkdown}>导出 Markdown</button>
+                {copied && <span style={{ color: "#22c55e", fontSize: 12, alignSelf: "center" }}>已复制</span>}
               </div>
-              <pre style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 13 }}>{selectedDigest.body}</pre>
+              <pre style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 13, color: "#dbe6ff" }}>{selectedDigest.body}</pre>
             </>
           )}
         </section>

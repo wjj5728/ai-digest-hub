@@ -70,6 +70,7 @@ export default function HomePage() {
   const [selectedDigest, setSelectedDigest] = useState<DigestRow | null>(null);
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -176,6 +177,12 @@ export default function HomePage() {
   useEffect(() => {
     loadDigestHistory().catch(() => undefined);
     loadMetrics().catch(() => undefined);
+
+    const query = window.matchMedia("(max-width: 900px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
 
   const aTierCount = useMemo(() => top.filter((x) => x.tier === "A").length, [top]);
@@ -184,9 +191,9 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: 1240, margin: "0 auto", padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.7 近7天趋势图（日报量与信源等级分布）</p>
+      <p style={{ marginTop: 0, color: "#98a2b3" }}>v1.0.8 移动端自适应优化（单列重排 + 触控友好）</p>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
+      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 12, background: "#121a2d" }}>
           <div style={{ color: "#98a2b3", fontSize: 12 }}>采集条数</div>
           <div style={{ fontSize: 22, fontWeight: 700 }}>{rawCount}</div>
@@ -223,7 +230,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
           <h2 style={{ marginTop: 0 }}>今日 Top5</h2>
           <p style={{ color: "#98a2b3" }}>趋势：{trend || "点击全流程生成后显示"}</p>
@@ -269,7 +276,7 @@ export default function HomePage() {
         </section>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginTop: 14 }}>
         <section style={{ border: "1px solid #2b3448", borderRadius: 12, padding: 14, background: "#121a2d" }}>
           <h2 style={{ marginTop: 0 }}>历史日报</h2>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>

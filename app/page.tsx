@@ -16,6 +16,7 @@ type Item = {
 type DigestRow = { id: string; createdAt: number; title: string; body: string };
 type MetricRow = { date: string; total: number; aCount: number; bCount: number; cCount: number; dCount: number };
 type SourceRow = { id: string; name: string; type: "rss" | "web" | "api"; enabled: boolean; weight?: number };
+type ScheduleConfig = { timezone: string; hour: number; minute: number; autoPublish: boolean; topN: number };
 
 async function requestJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -97,6 +98,7 @@ export default function HomePage() {
   const [minConfidence, setMinConfidence] = useState(0);
   const [tierFilter, setTierFilter] = useState("ALL");
   const [sources, setSources] = useState<SourceRow[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleConfig>({ timezone: "Asia/Shanghai", hour: 8, minute: 30, autoPublish: true, topN: 20 });
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -131,6 +133,20 @@ export default function HomePage() {
   async function checkConfig() {
     const data = await requestJson("/api/config-check");
     setConfigStatus({ hasApiKey: data.hasApiKey, mode: data.mode, baseUrl: data.baseUrl, model: data.model });
+  }
+
+  async function loadSchedule() {
+    const data = await requestJson("/api/schedule");
+    if (data?.config) setSchedule(data.config);
+  }
+
+  async function saveSchedule() {
+    const data = await requestJson("/api/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(schedule),
+    });
+    if (data?.config) setSchedule(data.config);
   }
 
   async function runCollect() {
@@ -223,6 +239,7 @@ export default function HomePage() {
     loadDigestHistory().catch(() => undefined);
     loadMetrics().catch(() => undefined);
     loadSources().catch(() => undefined);
+    loadSchedule().catch(() => undefined);
     const q = window.matchMedia("(max-width: 920px)");
     const update = () => setIsMobile(q.matches);
     update();
@@ -253,7 +270,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.1.2 Top列表筛选：按信源等级与置信度快速过滤</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.2.0 定时配置中心：时间/自动分发/Top条数可配置</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -349,7 +366,7 @@ export default function HomePage() {
           </div>
 
           <h3 style={{ marginTop: 14, marginBottom: 8 }}>渠道管理</h3>
-          <div style={{ display: "grid", gap: 6, maxHeight: 220, overflow: "auto", border: "1px solid #2a3555", borderRadius: 10, padding: 8 }}>
+          <div style={{ display: "grid", gap: 6, maxHeight: 180, overflow: "auto", border: "1px solid #2a3555", borderRadius: 10, padding: 8 }}>
             {sources.map((s) => (
               <label key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, fontSize: 12 }}>
                 <span>{s.name} <span style={{ color: "#8fa2c7" }}>({s.type})</span></span>
@@ -360,6 +377,33 @@ export default function HomePage() {
                 />
               </label>
             ))}
+          </div>
+
+          <h3 style={{ marginTop: 14, marginBottom: 8 }}>定时配置</h3>
+          <div style={{ border: "1px solid #2a3555", borderRadius: 10, padding: 8, display: "grid", gap: 8, fontSize: 12 }}>
+            <label style={{ display: "grid", gap: 4 }}>
+              <span style={{ color: "#8fa2c7" }}>时区</span>
+              <input value={schedule.timezone} onChange={(e) => setSchedule((p) => ({ ...p, timezone: e.target.value }))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "6px 8px" }} />
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <label style={{ display: "grid", gap: 4 }}>
+                <span style={{ color: "#8fa2c7" }}>小时</span>
+                <input type="number" min={0} max={23} value={schedule.hour} onChange={(e) => setSchedule((p) => ({ ...p, hour: Number(e.target.value) }))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "6px 8px" }} />
+              </label>
+              <label style={{ display: "grid", gap: 4 }}>
+                <span style={{ color: "#8fa2c7" }}>分钟</span>
+                <input type="number" min={0} max={59} value={schedule.minute} onChange={(e) => setSchedule((p) => ({ ...p, minute: Number(e.target.value) }))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "6px 8px" }} />
+              </label>
+            </div>
+            <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "#8fa2c7" }}>自动分发</span>
+              <input type="checkbox" checked={schedule.autoPublish} onChange={(e) => setSchedule((p) => ({ ...p, autoPublish: e.target.checked }))} />
+            </label>
+            <label style={{ display: "grid", gap: 4 }}>
+              <span style={{ color: "#8fa2c7" }}>定时Top条数</span>
+              <input type="number" min={1} max={50} value={schedule.topN} onChange={(e) => setSchedule((p) => ({ ...p, topN: Number(e.target.value) }))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "6px 8px" }} />
+            </label>
+            <button style={actionButton} onClick={saveSchedule}>保存定时配置</button>
           </div>
         </section>
       </div>

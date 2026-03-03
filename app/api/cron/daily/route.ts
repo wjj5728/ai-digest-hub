@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { summarizeTopItems } from "@/lib/analyst/summarize";
 import { collectAllSources } from "@/lib/collector";import { appendDigest } from "@/lib/db/file-store";
 import { upsertMetrics } from "@/lib/db/metrics-store";
+import { getScheduleConfig } from "@/lib/db/schedule-store";
 import { dedupeItems } from "@/lib/pipeline/dedupe";
 import { buildDailyMetrics } from "@/lib/pipeline/metrics";
 import { scoreItems } from "@/lib/pipeline/score";
@@ -17,13 +18,14 @@ export async function POST(request: Request) {
 
   const collected = await collectAllSources();  const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
-  const topN = Number(process.env.DIGEST_TOP_N || 20);
+  const schedule = await getScheduleConfig();
+  const topN = schedule.topN || Number(process.env.DIGEST_TOP_N || 20);
   const digest = await summarizeTopItems(scored, topN);
   const topics = buildTopicStats(scored);
   const markdown = toMarkdown(digest.title, digest.body);
   const saved = await appendDigest(digest.title, markdown);
   const metrics = await upsertMetrics(buildDailyMetrics(scored));
-  const published = await publishTelegram(markdown);
+  const published = schedule.autoPublish ? await publishTelegram(markdown) : { channel: "telegram", status: "mocked", messagePreview: "autoPublish disabled" };
 
   return NextResponse.json({
     ok: true,

@@ -17,6 +17,7 @@ type DigestRow = { id: string; createdAt: number; title: string; body: string };
 type MetricRow = { date: string; total: number; aCount: number; bCount: number; cCount: number; dCount: number };
 type SourceRow = { id: string; name: string; type: "rss" | "web" | "api"; enabled: boolean; weight?: number };
 type ScheduleConfig = { timezone: string; hour: number; minute: number; autoPublish: boolean; topN: number };
+type RunLog = { ts: number; stage: string; ok: boolean; detail: string };
 
 async function requestJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -99,6 +100,7 @@ export default function HomePage() {
   const [tierFilter, setTierFilter] = useState("ALL");
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [schedule, setSchedule] = useState<ScheduleConfig>({ timezone: "Asia/Shanghai", hour: 8, minute: 30, autoPublish: true, topN: 20 });
+  const [runLogs, setRunLogs] = useState<RunLog[]>([]);
   const [copied, setCopied] = useState(false);
 
   async function loadDigestHistory() {
@@ -138,6 +140,11 @@ export default function HomePage() {
   async function loadSchedule() {
     const data = await requestJson("/api/schedule");
     if (data?.config) setSchedule(data.config);
+  }
+
+  async function loadRunLogs() {
+    const data = await requestJson("/api/runlogs?limit=6");
+    setRunLogs(data.rows || []);
   }
 
   async function saveSchedule() {
@@ -240,6 +247,7 @@ export default function HomePage() {
     loadMetrics().catch(() => undefined);
     loadSources().catch(() => undefined);
     loadSchedule().catch(() => undefined);
+    loadRunLogs().catch(() => undefined);
     const q = window.matchMedia("(max-width: 920px)");
     const update = () => setIsMobile(q.matches);
     update();
@@ -270,7 +278,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.2.0 定时配置中心：时间/自动分发/Top条数可配置</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.2.1 任务可靠性增强：重试机制 + 运行日志</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -404,6 +412,16 @@ export default function HomePage() {
               <input type="number" min={1} max={50} value={schedule.topN} onChange={(e) => setSchedule((p) => ({ ...p, topN: Number(e.target.value) }))} style={{ borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "6px 8px" }} />
             </label>
             <button style={actionButton} onClick={saveSchedule}>保存定时配置</button>
+          </div>
+
+          <h3 style={{ marginTop: 14, marginBottom: 8 }}>最近运行日志</h3>
+          <div style={{ display: "grid", gap: 6, maxHeight: 140, overflow: "auto", border: "1px solid #2a3555", borderRadius: 10, padding: 8, fontSize: 12 }}>
+            {runLogs.length === 0 && <span style={{ color: "#8fa2c7" }}>暂无日志</span>}
+            {runLogs.map((l, idx) => (
+              <div key={idx} style={{ color: l.ok ? "#34d399" : "#f97373" }}>
+                {new Date(l.ts).toLocaleString("zh-CN")} [{l.stage}] {l.detail}
+              </div>
+            ))}
           </div>
         </section>
       </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { renderDigestByAudience, type AudienceMode } from "@/lib/analyst/template";
 import { summarizeTopItems } from "@/lib/analyst/summarize";
 import { collectAllSources } from "@/lib/collector";
 import { appendDigest } from "@/lib/db/file-store";
@@ -13,14 +14,16 @@ import { toMarkdown } from "@/lib/publisher/markdown";
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const topN = Number(body?.topN || 20);
+  const mode = String(body?.mode || "boss") as AudienceMode;
 
   const collected = await collectAllSources();
   const uniqueItems = dedupeItems(collected.items);
   const scored = scoreItems(uniqueItems);
   const digest = await summarizeTopItems(scored, topN);
   const topics = buildTopicStats(scored);
-  const markdown = toMarkdown(digest.title, digest.body);
-  const saved = await appendDigest(digest.title, markdown);
+  const rendered = renderDigestByAudience(digest, mode);
+  const markdown = toMarkdown(rendered.title, rendered.body);
+  const saved = await appendDigest(rendered.title, markdown);
   const metrics = await upsertMetrics(buildDailyMetrics(scored));
 
   return NextResponse.json({ ok: true, stage: "digest", digest, topics, markdown, saved, metrics });

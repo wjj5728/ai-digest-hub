@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { renderDigestByAudience, type AudienceMode } from "@/lib/analyst/template";
 import { summarizeTopItems } from "@/lib/analyst/summarize";
 import { collectAllSources } from "@/lib/collector";
 import { appendDigest } from "@/lib/db/file-store";
@@ -30,10 +31,12 @@ export async function POST(request: Request) {
     const topN = schedule.topN || Number(process.env.DIGEST_TOP_N || 20);
 
     const digest = await summarizeTopItems(scored, topN);
+    const mode = (process.env.DIGEST_AUDIENCE_MODE || "boss") as AudienceMode;
+    const rendered = renderDigestByAudience(digest, mode);
     const topics = buildTopicStats(scored);
-    const markdown = toMarkdown(digest.title, digest.body);
+    const markdown = toMarkdown(rendered.title, rendered.body);
 
-    const saved = await appendDigest(digest.title, markdown);
+    const saved = await appendDigest(rendered.title, markdown);
     const metrics = await upsertMetrics(buildDailyMetrics(scored));
 
     const published = schedule.autoPublish

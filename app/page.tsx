@@ -96,6 +96,7 @@ export default function HomePage() {
   const [configStatus, setConfigStatus] = useState<{ hasApiKey?: boolean; mode?: string; baseUrl?: string; model?: string }>({});
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [topN, setTopN] = useState(20);
+  const [audienceMode, setAudienceMode] = useState<"boss" | "tech" | "invest">("boss");
   const [minConfidence, setMinConfidence] = useState(0);
   const [tierFilter, setTierFilter] = useState("ALL");
   const [sources, setSources] = useState<SourceRow[]>([]);
@@ -182,7 +183,7 @@ export default function HomePage() {
     const data = await requestJson("/api/digest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topN }),
+      body: JSON.stringify({ topN, mode: audienceMode }),
     });
     setTopics(data.topics || []);
     setTop(data.digest?.top || []);
@@ -196,7 +197,7 @@ export default function HomePage() {
     const data = await requestJson("/api/publish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topN }),
+      body: JSON.stringify({ topN, mode: audienceMode }),
     });
     setPublishStatus(data.results?.[0]?.status || "-");
   }
@@ -278,7 +279,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.3.0 多渠道分发：Telegram + Webhook</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.3.1 日报模板模式：老板版 / 技术版 / 投资版</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>
@@ -358,6 +359,18 @@ export default function HomePage() {
               <option value={10}>10</option>
               <option value={20}>20</option>
               <option value={30}>30</option>
+            </select>
+          </p>
+          <p>
+            模板模式：
+            <select
+              value={audienceMode}
+              onChange={(e) => setAudienceMode(e.target.value as "boss" | "tech" | "invest")}
+              style={{ marginLeft: 8, borderRadius: 8, background: "#16213a", color: "#e6edff", border: "1px solid #2a3555", padding: "3px 8px" }}
+            >
+              <option value="boss">老板版</option>
+              <option value="tech">技术版</option>
+              <option value="invest">投资版</option>
             </select>
           </p>
           <p>模式：{configStatus.mode || "未检测"}</p>

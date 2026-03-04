@@ -198,7 +198,7 @@ export default function HomePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topN }),
     });
-    setPublishStatus(data.result?.status || "-");
+    setPublishStatus(data.results?.[0]?.status || "-");
   }
 
   async function runDigestAndOpenLatest() {
@@ -278,7 +278,7 @@ export default function HomePage() {
       }}
     >
       <h1 style={{ marginBottom: 8, letterSpacing: 0.2 }}>AI Digest Hub</h1>
-      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.2.1 任务可靠性增强：重试机制 + 运行日志</p>
+      <p style={{ marginTop: 0, color: "#8fa2c7" }}>v1.3.0 多渠道分发：Telegram + Webhook</p>
 
       <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
         <div style={{ ...panel, padding: 12 }}><div style={{ color: "#8fa2c7", fontSize: 12 }}>采集条数</div><div style={{ fontSize: 24, fontWeight: 800 }}>{rawCount}</div></div>

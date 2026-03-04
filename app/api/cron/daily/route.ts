@@ -12,7 +12,7 @@ import { withRetry } from "@/lib/pipeline/retry";
 import { scoreItems } from "@/lib/pipeline/score";
 import { buildTopicStats } from "@/lib/pipeline/topics";
 import { toMarkdown } from "@/lib/publisher/markdown";
-import { publishTelegram } from "@/lib/publisher/telegram";
+import { publishAllChannels } from "@/lib/publisher";
 
 export async function POST(request: Request) {
   const secret = request.headers.get("x-cron-secret");
@@ -37,14 +37,14 @@ export async function POST(request: Request) {
     const metrics = await upsertMetrics(buildDailyMetrics(scored));
 
     const published = schedule.autoPublish
-      ? await withRetry(() => publishTelegram(markdown), 2, 700)
-      : { channel: "telegram", status: "mocked", messagePreview: "autoPublish disabled" };
+      ? await withRetry(() => publishAllChannels(markdown), 2, 700)
+      : [{ channel: "telegram", status: "mocked", detail: "autoPublish disabled" }];
 
     await appendRunLog({
       ts: Date.now(),
       stage: "daily",
       ok: true,
-      detail: `raw=${collected.itemCount}, unique=${uniqueItems.length}, publish=${published.status}`,
+      detail: `raw=${collected.itemCount}, unique=${uniqueItems.length}, publish=${published.map((x) => `${x.channel}:${x.status}`).join("|")}`,
     });
 
     return NextResponse.json({

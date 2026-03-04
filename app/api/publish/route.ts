@@ -5,7 +5,7 @@ import { collectAllSources } from "@/lib/collector";
 import { dedupeItems } from "@/lib/pipeline/dedupe";
 import { scoreItems } from "@/lib/pipeline/score";
 import { toMarkdown } from "@/lib/publisher/markdown";
-import { publishTelegram } from "@/lib/publisher/telegram";
+import { publishAllChannels } from "@/lib/publisher";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -16,12 +16,12 @@ export async function POST(request: Request) {
   const scored = scoreItems(uniqueItems);
   const digest = await summarizeTopItems(scored, topN);
   const markdown = toMarkdown(digest.title, digest.body);
-  const result = await publishTelegram(markdown);
+  const results = await publishAllChannels(markdown);
 
   return NextResponse.json({
     ok: true,
     stage: "publish",
     digestTitle: digest.title,
-    result,
+    results,
   });
 }

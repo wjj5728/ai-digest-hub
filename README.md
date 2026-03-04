@@ -2,6 +2,11 @@
 
 AI 资讯聚合 -> 分析 -> 日报 -> 多渠道分发。
 
+## v1.3.0
+- 新增多渠道分发总线：`publishAllChannels`
+- 支持 Telegram + Webhook 组合分发（`DIGEST_CHANNELS`）
+- cron 与手动分发统一走多渠道链路
+
 ## v1.2.1
 - 新增重试机制（采集与分发失败自动重试）
 - 新增运行日志存储与接口：`/api/runlogs`
